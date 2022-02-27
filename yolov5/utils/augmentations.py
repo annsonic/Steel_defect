@@ -21,15 +21,44 @@ class Albumentations:
             import albumentations as A
             check_version(A.__version__, '1.0.3', hard=True)  # version requirement
 
-            self.transform = A.Compose([
-                A.Blur(p=0.01),
-                A.MedianBlur(p=0.01),
-                A.ToGray(p=0.01),
-                A.CLAHE(p=0.01),
-                A.RandomBrightnessContrast(p=0.0),
-                A.RandomGamma(p=0.0),
-                A.ImageCompression(quality_lower=75, p=0.0)],
-                bbox_params=A.BboxParams(format='yolo', label_fields=['class_labels']))
+            self.transform = A.Compose(
+                [
+                    # A.Blur(blur_limit=3, p=0.5), 
+                    # A.MedianBlur(blur_limit=3, p=0.5),
+                    A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8),p=0.5), 
+                    A.RandomBrightnessContrast(brightness_by_max=True, p=0.5),
+                    A.RandomGamma(gamma_limit=(75, 125), p=0.5),
+                    A.ImageCompression(quality_lower=75, p=0.5),
+                    A.RandomRotate90(p=0.5),
+                    A.GaussNoise(var_limit=(1.0, 200.0), mean=0, per_channel=True, p=0.5),
+                    A.MultiplicativeNoise(multiplier=(0.8, 1.2), elementwise=True, p=0.5),
+                    A.ToGray(p=1),
+                ], 
+                bbox_params=A.BboxParams(format='yolo', label_fields=['class_labels']),
+                p=1
+            )
+            
+            self.spatial_transform = A.OneOf(
+                [
+                    A.ElasticTransform(
+                        alpha = 75,
+                        sigma = 30,
+                        alpha_affine = 1,
+                        border_mode=4,
+                        p=1
+                    ),
+                    A.GridDistortion(
+                        num_steps=8, 
+                        distort_limit=0.5, 
+                        border_mode=1,
+                        p=4),
+                    A.OpticalDistortion(
+                        distort_limit=0.2, 
+                        shift_limit=0.3, 
+                        border_mode=1,
+                        p=4),
+                ], p=1
+            )
 
             LOGGER.info(colorstr('albumentations: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
         except ImportError:  # package not installed, skip
@@ -41,6 +70,28 @@ class Albumentations:
         if self.transform and random.random() < p:
             new = self.transform(image=im, bboxes=labels[:, 1:], class_labels=labels[:, 0])  # transformed
             im, labels = new['image'], np.array([[c, *b] for c, b in zip(new['class_labels'], new['bboxes'])])
+
+        # DO spatial transform but keep box size
+        if self.spatial_transform and random.random() < p:
+            h, w = im.shape[:2]
+            for label in labels: # label: np.array shape (5,)
+                xc = int(label[1] * w)
+                yc = int(label[2] * h)
+                bw = int(label[3] * w)
+                bh = int(label[4] * h)
+                # box
+                xmin = max(0, xc - bw // 2)
+                ymin = max(0, yc - bh // 2)
+                xmax = min(w, xmin + bw)
+                ymax = min(h, ymin + bh)
+
+                # Crop RoI
+                src = im[ymin:ymax, xmin:xmax, :]
+                new = self.spatial_transform(image=src)
+                dst = new['image']
+                # Paste
+                im[ymin:ymax, xmin:xmax, :] = dst
+                
         return im, labels
 
 
