@@ -42,11 +42,11 @@ Modify `ROOT_FOLDER_PATH`
 $ python statistics.py
 
 """
-ROOT_FOLDER_PATH = r'D:/Documents/Academic/workspace/python_prj/now/NEU_surface_defect/dataset/NEU-DET'
+ROOT_FOLDER_PATH = r'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset/NEU-DET'
 TRAIN_FOLDER = 'train'
 VALID_FOLDER = 'validation'
 IMG_FOLDER = 'images'
-ANNOT_FOLDER = 'annotations'
+ANNOT_FOLDER = 'annotations_clean'
 LABELS = ['crazing', 'inclusion', 'patches', 'pitted_surface', 'rolled-in_scale', 'scratches']
 
 def read_xml(fp):
@@ -148,8 +148,13 @@ def create_summary_csv():
         'ymax': list_ymax
     }
     
-    # Step 2. Append 5 columns: (xmin+xmax)/2; (ymin+ymax)/2; xmax-xmin; ymax-ymin; aspect_ratio
+    # Step 2. Remove duplicate columns
     df = pd.DataFrame.from_dict(dict_summary)
+    df_dup = df[df[['file_name', 'class_name', 'xmin','ymin','xmax', 'ymax']].duplicated()]
+    print("Duplicate box:\n", df_dup)
+    df = df.drop_duplicates(['file_name', 'class_name', 'xmin','ymin','xmax', 'ymax'], keep='last')
+
+    # Step 3. Append 5 columns: (xmin+xmax)/2; (ymin+ymax)/2; xmax-xmin; ymax-ymin; aspect_ratio
     df['xc'] = df.apply(lambda x: mean(x['xmin'], x['xmax']), axis=1)
     df['yc'] = df.apply(lambda x: mean(x['ymin'], x['ymax']), axis=1)
     df['w'] = df.apply(lambda x: difference(x['xmin'], x['xmax']), axis=1)
@@ -467,7 +472,7 @@ if __name__ == '__main__':
     # create_summary_csv()
     # plot_class_per_image()
     # plot_class_count()
-    # plot_pairplot_asr()
+    plot_pairplot_asr()
     # plot_co_occurrence()
     # plot_anchor_shape()
     # plot_brightness_histogram()

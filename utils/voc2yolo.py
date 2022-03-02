@@ -52,7 +52,7 @@ $ python voc2yolo.py
 
 """
 
-ROOT_FOLDER_PATH = r'D:/Documents/Academic/workspace/python_prj/now/NEU_surface_defect/dataset/NEU-DET'
+ROOT_FOLDER_PATH = r'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset/NEU-DET'
 LABELS = ['crazing', 'inclusion', 'patches', 'pitted_surface', 'rolled-in_scale', 'scratches']
 
 
@@ -99,7 +99,7 @@ for image_set in ['train', 'validation']:
 
     # Input image list
     # image_ids = open(f'VOC{year}/ImageSets/Main/{image_set}.txt').read().strip().split()
-    annot_folder = os.path.join(ROOT_FOLDER_PATH, image_set, 'annotations')
+    annot_folder = os.path.join(ROOT_FOLDER_PATH, image_set, 'annotations_clean')
     xml_files = os.listdir(annot_folder)
 
     for xml_fn in tqdm(xml_files, desc=f'{image_set}'):
