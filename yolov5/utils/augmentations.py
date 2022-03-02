@@ -13,6 +13,70 @@ from utils.general import LOGGER, check_version, colorstr, resample_segments, se
 from utils.metrics import bbox_ioa
 
 
+class GridMask(object):
+    def __init__(self, mode=1, rotate=1, r_ratio=0.5):
+        self.mode = mode
+        self.rotate = rotate
+        self.r_ratio = r_ratio
+    
+    def rotate_bound(self, image, angle):
+        # CREDIT: https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
+        (h, w) = image.shape[:2]
+        (cX, cY) = (w // 2, h // 2)
+        M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
+        cos = np.abs(M[0, 0])
+        sin = np.abs(M[0, 1])
+        nW = int((h * sin) + (w * cos))
+        nH = int((h * cos) + (w * sin))
+        M[0, 2] += (nW / 2) - cX
+        M[1, 2] += (nH / 2) - cY
+
+        return cv2.warpAffine(image, M, (nW, nH))
+
+    def put_grid(self, image):
+        h, w, _ = image.shape
+
+        # Size of mask
+        L = math.ceil((math.sqrt(h*h + w*w))) * 3
+        # Size of (black cell + white cell)
+        d = np.random.randint(2, min(h,w))
+        # Size of a white cell
+        l = min(max(int(d * self.r_ratio + 0.5), 1), d-1)
+        # Create mask
+        mask = np.ones((L, L), np.float32)
+        # Size of black cell
+        st_h = np.random.randint(d)
+        st_w = np.random.randint(d)
+
+        for i in range(L//d):
+            s = d*i + st_h
+            t = min(s+l, L)
+            mask[s:t,:] *= 0
+    
+        for i in range(L//d):
+                s = d*i + st_w
+                t = min(s+l, L)
+                mask[:,s:t] *= 0
+        # Rotate mask
+        r = np.random.randint(self.rotate)
+        mask = self.rotate_bound(mask, angle=r)
+        # Fit mask to size of input image
+        mask = mask[(L-h)//2:(L-h)//2+h, (L-w)//2:(L-w)//2+w]
+
+        if self.mode == 1:
+            mask = 1  -mask
+        # Mask th input image
+        image[mask == 0] = (255, 255, 255)
+        
+        return image
+    
+    def __call__(self, image):
+        if random.random() < 1:
+            image = self.put_grid(image.copy())
+
+        return image
+
+
 class Albumentations:
     # YOLOv5 Albumentations class (optional, only used if package is installed)
     def __init__(self):
@@ -25,9 +89,9 @@ class Albumentations:
                 [
                     # A.Blur(blur_limit=3, p=0.5), 
                     # A.MedianBlur(blur_limit=3, p=0.5),
-                    A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8),p=0.5), 
+                    # A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8),p=0.5), 
                     A.RandomBrightnessContrast(brightness_by_max=True, p=0.5),
-                    A.RandomGamma(gamma_limit=(75, 125), p=0.5),
+                    A.RandomGamma(gamma_limit=(50, 250), p=0.5),
                     A.ImageCompression(quality_lower=75, p=0.5),
                     A.RandomRotate90(p=0.5),
                     A.GaussNoise(var_limit=(1.0, 200.0), mean=0, per_channel=True, p=0.5),
@@ -45,28 +109,58 @@ class Albumentations:
                         sigma = 30,
                         alpha_affine = 1,
                         border_mode=4,
-                        p=1
+                        p=0.5
                     ),
                     A.GridDistortion(
                         num_steps=8, 
                         distort_limit=0.5, 
-                        border_mode=1,
-                        p=4),
+                        border_mode=4,
+                        p=0.5),
                     A.OpticalDistortion(
                         distort_limit=0.2, 
                         shift_limit=0.3, 
-                        border_mode=1,
-                        p=4),
+                        border_mode=4,
+                        p=0.5),
                 ], p=1
             )
 
-            LOGGER.info(colorstr('albumentations: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
+            self.grid_mask = GridMask(mode=1, rotate=45, r_ratio=0.5)
+
+            LOGGER.info(colorstr('albumentations pixel: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
+            LOGGER.info(colorstr('albumentations spatial: ') + ', '.join(f'{x}' for x in self.spatial_transform.transforms if x.p))
         except ImportError:  # package not installed, skip
             pass
         except Exception as e:
             LOGGER.info(colorstr('albumentations: ') + f'{e}')
 
+    def _autocontrast(self, img):
+        """
+        source: https://stackoverflow.com/questions/66917293/autocontrast-in-albumentations
+        """
+        h = cv2.calcHist([img], [0], None, [256], (0, 256)).ravel()
+
+        for lo in range(256):
+            if h[lo]:
+                break
+        for hi in range(255, -1, -1):
+            if h[hi]:
+                break
+
+        if hi > lo:
+            lut = np.zeros(256, dtype=np.uint8)
+            scale_coef = 255.0 / (hi - lo)
+            offset = -lo * scale_coef
+            for ix in range(256):
+                lut[ix] = int(np.clip(ix * scale_coef + offset, 0, 255))
+
+            img = cv2.LUT(img, lut)
+
+        return img
+
     def __call__(self, im, labels, p=1.0):
+        if random.random() < 0.5:
+            im = self._autocontrast(im)
+
         if self.transform and random.random() < p:
             new = self.transform(image=im, bboxes=labels[:, 1:], class_labels=labels[:, 0])  # transformed
             im, labels = new['image'], np.array([[c, *b] for c, b in zip(new['class_labels'], new['bboxes'])])
@@ -75,6 +169,8 @@ class Albumentations:
         if self.spatial_transform and random.random() < p:
             h, w = im.shape[:2]
             for label in labels: # label: np.array shape (5,)
+                # if label[0] in [0, 3, 4]: # 'crazing', 'pitted_surface', 'rolled-in_scale'
+                #     continue
                 xc = int(label[1] * w)
                 yc = int(label[2] * h)
                 bw = int(label[3] * w)
@@ -91,7 +187,11 @@ class Albumentations:
                 dst = new['image']
                 # Paste
                 im[ymin:ymax, xmin:xmax, :] = dst
-                
+
+        # Do GridMask dataaugmentation
+        if random.random() < 0.5:
+            im = self.grid_mask(im)
+
         return im, labels
 
 

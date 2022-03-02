@@ -19,7 +19,7 @@ import random
             - crazing_*.xml
             - inclusion_*.xml
             - patches_*.xml
-            - pittes_surface_*.xml
+            - pitted_surface_*.xml
             - rolled-in_scale_*.xml
             - scratches_*.xml
         - images
@@ -29,8 +29,8 @@ import random
                 - inclusion_*.jpg
             - patches
                 - patches_*.jpg
-            - pittes_surface
-                - pittes_surface_*.jpg
+            - pitted_surface
+                - pitted_surface_*.jpg
             - rolled-in_scale
                 - rolled-in_scale_*.jpg
             - scratches
