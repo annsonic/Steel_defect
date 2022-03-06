@@ -1,0 +1,47 @@
+model_name: atss_retina
+data:
+  train_annotation_path: /home/huffman/data/annotations/instances_train2017.json
+#  train_annotation_path: /home/huffman/data/annotations/instances_val2017.json
+  val_annotation_path: /home/huffman/data/annotations/instances_val2017.json
+  train_img_root: /home/huffman/data/train2017
+#  train_img_root: /home/huffman/data/val2017
+  val_img_root: /home/huffman/data/val2017
+  max_thresh: 640
+  use_crowd: False
+  batch_size: 8
+  num_workers: 4
+  debug: False
+  remove_blank: Ture
+
+model:
+  num_cls: 80
+  anchor_sizes: [32, 64, 128, 256, 512]
+  strides: [8, 16, 32, 64, 128]
+  backbone: resnet50
+  pretrained: True
+  top_k: 9
+  alpha: 0.25
+  gamma: 2.0
+  iou_type: giou
+  iou_loss_weight: 0.5
+  reg_loss_weight: 1.15
+  iou_loss_type: centerness
+  conf_thresh: 0.05
+  nms_iou_thresh: 0.5
+  max_det: 300
+
+optim:
+  optimizer: Adam
+  lr: 0.0001
+  milestones: [18,24]
+  warm_up_epoch: 0
+  weight_decay: 0.0001
+  epochs: 24
+  sync_bn: True
+  amp: True
+val:
+  interval: 1
+  weight_path: weights
+
+
+gpus: 0,1,2,3
