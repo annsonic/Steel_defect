@@ -110,6 +110,8 @@ def convert_label(annotation_paths, label2id, output_jsonpath):
 
         # Part: images
         filename = ann_root.findtext('filename')
+        if not filename.endswith('.jpg'):
+            filename += '.jpg'
         size = ann_root.find('size')
         width = int(size.findtext('width'))
         height = int(size.findtext('height'))
