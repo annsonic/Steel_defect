@@ -23,10 +23,12 @@ class SimpleSolver(object):
         self.model_cfg = self.cfg['model']
         self.optim_cfg = self.cfg['optim']
         self.val_cfg = self.cfg['val']
+        self.resume_cfg = self.cfg['resume']
         print(self.data_cfg)
         print(self.model_cfg)
         print(self.optim_cfg)
         print(self.val_cfg)
+        print(self.resume_cfg)
         os.environ['CUDA_VISIBLE_DEVICES'] = str(self.cfg['gpus'])
         self.gpu_num = 1
 
@@ -63,6 +65,9 @@ class SimpleSolver(object):
               "val_iter: ", len(self.vloader))
         
         self.model = RetinaNet(**self.model_cfg)
+        if len(self.resume_cfg['ckpt_name']) > 0:
+            weight_path = os.path.join(self.val_cfg['weight_path'], self.resume_cfg['ckpt_name'])
+            self.model.load_state_dict(torch.load(weight_path, map_location='cpu')['ema'])
         self.best_map = 0.
         optimizer = split_optimizer(self.model, self.optim_cfg)
         
@@ -224,3 +229,7 @@ class SimpleSolver(object):
             self.train(epoch)
             if (epoch + 1) % self.val_cfg['interval'] == 0:
                 self.val(epoch)
+    
+    def eval(self):
+        print('Start evaluating...')
+        self.val(epoch=1)

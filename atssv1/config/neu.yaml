@@ -1,23 +1,28 @@
 model_name: atss_retina
 data:
-  train_annotation_path: /home/huffman/data/annotations/instances_train2017.json
-#  train_annotation_path: /home/huffman/data/annotations/instances_val2017.json
-  val_annotation_path: /home/huffman/data/annotations/instances_val2017.json
-  train_img_root: /home/huffman/data/train2017
-#  train_img_root: /home/huffman/data/val2017
-  val_img_root: /home/huffman/data/val2017
-  max_thresh: 640
+  # train_annotation_path: 'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset/NEU-DET_COCO/annotations/train.json'
+  # val_annotation_path: 'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset/NEU-DET_COCO/annotations/validation.json'
+  # train_img_root: 'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset/NEU-DET_COCO/images'
+  # val_img_root: 'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset/NEU-DET_COCO/images'
+  
+  train_annotation_path: '/content/gdrive/MyDrive/Colab Notebooks/Steel_defect/dataset/NEU-DET_COCO/annotations/train.json'
+  val_annotation_path: '/content/gdrive/MyDrive/Colab Notebooks/Steel_defect/dataset/NEU-DET_COCO/annotations/validation.json'
+  train_img_root: '/content/gdrive/MyDrive/Colab Notebooks/Steel_defect/dataset/NEU-DET_COCO/images'
+  val_img_root: '/content/gdrive/MyDrive/Colab Notebooks/Steel_defect/dataset/NEU-DET_COCO/images'
+  
+  max_thresh: 320
   use_crowd: False
-  batch_size: 8
-  num_workers: 4
+  batch_size: 4 #128
+  num_workers: 1 #2
   debug: False
   remove_blank: Ture
 
 model:
-  num_cls: 80
+  num_cls: 6
+  # https://github.com/martinzlocha/anchor-optimization/
   anchor_sizes: [32, 64, 128, 256, 512]
   strides: [8, 16, 32, 64, 128]
-  backbone: resnet50
+  backbone: resnet18
   pretrained: True
   top_k: 9
   alpha: 0.25
@@ -26,22 +31,24 @@ model:
   iou_loss_weight: 0.5
   reg_loss_weight: 1.15
   iou_loss_type: centerness
-  conf_thresh: 0.05
-  nms_iou_thresh: 0.5
+  conf_thresh: 0.3
+  nms_iou_thresh: 0.2
   max_det: 300
 
 optim:
   optimizer: Adam
   lr: 0.0001
-  milestones: [18,24]
-  warm_up_epoch: 0
+  milestones: [] # [48, 55]
+  warm_up_epoch: 2
   weight_decay: 0.0001
-  epochs: 24
+  epochs: 1 # 60
   sync_bn: True
   amp: True
 val:
   interval: 1
   weight_path: weights
 
+resume:
+  ckpt_name: 'atss_retina_resnet18_best_map.pth'
 
-gpus: 0,1,2,3
+gpus: 'cpu' # 0 or 'cpu'

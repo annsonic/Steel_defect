@@ -78,7 +78,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls):
             # AP from recall-precision curve
             for j in range(tp.shape[1]):
                 ap[ci, j] = compute_ap(recall[:, j], precision[:, j])
-
+            print(f"\tSingle classid={c}, ap50: {ap[ci][0]}")
             # Plot
             # fig, ax = plt.subplots(1, 1, figsize=(5, 5))
             # ax.plot(recall, precision)

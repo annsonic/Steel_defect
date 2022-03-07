@@ -27,15 +27,20 @@ def coco_eavl(anno_path="/home/huffman/data/annotations/instances_val2017.json",
 
 
 @torch.no_grad()
-def eval_model(weight_path="weights/atss_retina_resnet50_last.pth", device="cuda:5"):
+def eval_model(weight_path="weights/atss_retina_resnet50_last.pth"):
     from pycocotools.coco import COCO
-    device = torch.device(device)
+
     with open("config/atss.yaml", 'r') as rf:
         cfg = yaml.safe_load(rf)
-    net = RetinaNet(**{**cfg['model'], 'pretrained': False, "nms_iou_thresh": 0.6})
-    net.load_state_dict(torch.load(weight_path, map_location="cpu")['ema'])
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(cfg['gpus'])
+    device = torch.device(cfg['gpus'])
+    
+    net = RetinaNet(**{**cfg['model'], 'pretrained': False})
+    net.load_state_dict(torch.load(weight_path, map_location=device)['ema'])
     net.to(device)
     net.eval().half()
+
     data_cfg = cfg['data']
     basic_transform = RandScaleToMax(max_threshes=[data_cfg['max_thresh']])
     coco = COCO(data_cfg['val_annotation_path'])
@@ -74,5 +79,14 @@ def eval_model(weight_path="weights/atss_retina_resnet50_last.pth", device="cuda
     coco_eavl(anno_path=data_cfg['val_annotation_path'], pred_path="predicts.json")
 
 
+
+def my_eval():
+    from solver.solver import SimpleSolver
+
+    processor = SimpleSolver(cfg_path="config/neu.yaml")
+    processor.eval()
+
 if __name__ == '__main__':
-    eval_model()
+    # eval_model()
+
+    my_eval()
