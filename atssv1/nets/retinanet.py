@@ -223,7 +223,7 @@ class RetinaHead(nn.Module):
             # 9*4
             anchor_delta = self.build_anchors_delta(size)
             _, _, ny, nx = feature_map.shape
-            yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
+            yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)], indexing='ij')
             # h,w,4
             grid = torch.stack([xv, yv, xv, yv], 2).float()
             anchor = (grid[:, :, None, :] + 0.5) * stride + anchor_delta[None, None, :, :]
