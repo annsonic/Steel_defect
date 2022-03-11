@@ -3,17 +3,17 @@
 # See tutorials for hyperparameter evolution https://github.com/ultralytics/yolov5#tutorials
 
 
-lr0: 0.01  # initial learning rate (SGD=1E-2, Adam=1E-3)
-lrf: 0.1  # final OneCycleLR learning rate (lr0 * lrf)
-momentum: 0.937  # SGD momentum/Adam beta1
-weight_decay: 0.0005  # optimizer weight decay 5e-4
-warmup_epochs: 3.0  # warmup epochs (fractions ok)
-warmup_momentum: 0.8  # warmup initial momentum
-warmup_bias_lr: 0.01  # warmup initial bias lr
+lr0: 0.0005  # initial learning rate (SGD=1E-2, Adam=1E-3)
+lrf: 0.35  # final OneCycleLR learning rate (lr0 * lrf)
+momentum: 0.9  # SGD momentum/Adam beta1
+weight_decay: 0.0001  # optimizer weight decay 2e-4
+warmup_epochs: 2.0  # warmup epochs (fractions ok)
+warmup_momentum: 0.6  # warmup initial momentum
+warmup_bias_lr: 0.1  # warmup initial bias lr
 # giou: 0.1  # GIoU loss gain
-box: 0.03  # box loss gain
-cls: 0.5  # cls loss gain
-cls_pw: 1.0  # cls BCELoss positive_weight
+box: 0.1  # box loss gain
+cls: 1.4  # cls loss gain
+cls_pw: 1.5  # cls BCELoss positive_weight
 obj: 1.5  # obj loss gain (scale with pixels)
 obj_pw: 1.0  # obj BCELoss positive_weight
 iou_t: 0.20  # IoU training threshold
@@ -23,10 +23,10 @@ hsv_h: 0.015  # image HSV-Hue augmentation (fraction)
 hsv_s: 0.7  # image HSV-Saturation augmentation (fraction)
 hsv_v: 0.4  # image HSV-Value augmentation (fraction)
 degrees: 10.0  # image rotation (+/- deg)
-translate: 0.5  # image translation (+/- fraction)
-scale: 0.5  # image scale (+/- gain)
-shear: 0.0  # image shear (+/- deg)
-perspective: 0.0  # image perspective (+/- fraction), range 0-0.001
+translate: 0.1  # image translation (+/- fraction)
+scale: 0.1  # image scale (+/- gain)
+shear: 5.0  # image shear (+/- deg)
+perspective: 0.0005  # image perspective (+/- fraction), range 0-0.001
 flipud: 0.5  # image flip up-down (probability)
 fliplr: 0.5  # image flip left-right (probability)
 mosaic: 0.5  # image mosaic (probability)
