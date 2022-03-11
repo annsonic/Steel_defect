@@ -14,6 +14,7 @@ are not many distict boundaries between the crazes in `NEU-DET` images.
 * Focal loss
 * More data augmentation
 * Cosine learning rate
+
 but couldn't improve weak classes' score.
 ## Performance
 There are six types of surface defects in the NEU-DET dataset: crazing (Cr), inclusion (In), patches (Pa),  pitted surface (Ps), rolled-in scale (Rs), and scratches (Sc). 
@@ -124,7 +125,7 @@ It works with keras 2.4 and tensorflow 2.3.0.
 2. run tain.py with `--img-size <int>` argument
 
 * Train
-1. cd yolov5
+1. `cd yolov5`
 2.
 
 ```
@@ -146,7 +147,7 @@ python train.py \
 ```
 
 * Evaluate
-1. cd yolov5
+1. `cd yolov5`
 2. 
 
 ```

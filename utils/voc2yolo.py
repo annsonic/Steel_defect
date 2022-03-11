@@ -10,50 +10,55 @@ import shutil
 https://github.com/ultralytics/yolov5/blob/26f0415287b7fa333f559a8300cedc2274943ab6/data/VOC.yaml
 
 [file tree]
-- NEU-DET
-    - train
-    - validation
-        - annotations
-            - crazing_*.xml
-            - inclusion_*.xml
-            - patches_*.xml
-            - pittes_surface_*.xml
-            - rolled-in_scale_*.xml
-            - scratches_*.xml
+- ROOT_FOLDER_PATH 
+    - NEU-DET
+        - train
+        - validation
+            - annotations
+                - crazing_*.xml
+                - inclusion_*.xml
+                - patches_*.xml
+                - pittes_surface_*.xml
+                - rolled-in_scale_*.xml
+                - scratches_*.xml
+            - images
+                - crazing
+                    - crazing_*.jpg
+                - inclusion
+                    - inclusion_*.jpg
+                - patches
+                    - patches_*.jpg
+                - pittes_surface
+                    - pittes_surface_*.jpg
+                - rolled-in_scale
+                    - rolled-in_scale_*.jpg
+                - scratches
+                    - scratches_*.jpg
+    - NEU-DET_YOLO
         - images
-            - crazing
-                - crazing_*.jpg
-            - inclusion
-                - inclusion_*.jpg
-            - patches
-                - patches_*.jpg
-            - pittes_surface
-                - pittes_surface_*.jpg
-            - rolled-in_scale
-                - rolled-in_scale_*.jpg
-            - scratches
-                - scratches_*.jpg
-- NEU-DET_YOLO
-    - images
-        -validation
-            -*.jpg
-        -train
-            -*.jpg
-    - labels
-        -validation
-            -*.txt
-        -train
-            -*.txt
+            -validation
+                -*.jpg
+            -train
+                -*.jpg
+        - labels
+            -validation
+                -*.txt
+            -train
+                -*.txt
 - voc2yolo.py
 
 [Usage]
+Modify `ROOT_FOLDER_PATH` to yours.
+Modify `COPY_IMG` if you want to copy images to new image folder.
 Modify `LABELS` to your class names.
 $ python voc2yolo.py
 
 """
 
-ROOT_FOLDER_PATH = r'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset/NEU-DET'
+ROOT_FOLDER_PATH = r'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset'
+VOC_FOLDER_PATH = os.path.join(ROOT_FOLDER_PATH, 'NEU-DET') 
 LABELS = ['crazing', 'inclusion', 'patches', 'pitted_surface', 'rolled-in_scale', 'scratches']
+COPY_IMG = False # If true, copy images to new image folder
 
 
 def convert_label(in_fp, out_fp):
@@ -92,26 +97,27 @@ def convert_label(in_fp, out_fp):
 # Convert
 for image_set in ['train', 'validation']:
     # Output path
-    imgs_path = Path(f'NEU-DET_YOLO/images/{image_set}')
-    lbs_path = Path(f'NEU-DET_YOLO/labels/{image_set}')
+    imgs_path = Path(f'{ROOT_FOLDER_PATH}/NEU-DET_YOLO/images/{image_set}')
+    lbs_path = Path(f'{ROOT_FOLDER_PATH}/NEU-DET_YOLO/labels/{image_set}')
     imgs_path.mkdir(exist_ok=True, parents=True)
     lbs_path.mkdir(exist_ok=True, parents=True)
 
     # Input image list
     # image_ids = open(f'VOC{year}/ImageSets/Main/{image_set}.txt').read().strip().split()
-    annot_folder = os.path.join(ROOT_FOLDER_PATH, image_set, 'annotations_clean')
+    annot_folder = os.path.join(VOC_FOLDER_PATH, image_set, 'annotations_clean')
     xml_files = os.listdir(annot_folder)
 
     for xml_fn in tqdm(xml_files, desc=f'{image_set}'):
-        # Get input image path
-        img_fn = xml_fn.replace('xml', 'jpg')
-        str_digits = img_fn.split('.')[0]
-        label_folder = ''.join([i for i in str_digits if not i.isdigit()])
-        label_folder = label_folder.strip('_')
-        img_fp = os.path.join(ROOT_FOLDER_PATH, image_set, 'images', label_folder, img_fn)
+        if COPY_IMG:
+            # Get input image path
+            img_fn = xml_fn.replace('xml', 'jpg')
+            str_digits = img_fn.split('.')[0]
+            label_folder = ''.join([i for i in str_digits if not i.isdigit()])
+            label_folder = label_folder.strip('_')
+            img_fp = os.path.join(VOC_FOLDER_PATH, image_set, 'images', label_folder, img_fn)
 
-        # Copy image
-        shutil.copy(src=img_fp, dst=str(imgs_path))
+            # Copy image
+            shutil.copy(src=img_fp, dst=str(imgs_path))
 
         # Get input xml path
         xml_fp = Path(f'{annot_folder}/{xml_fn}')

@@ -32,7 +32,7 @@ from operator import itemgetter
                 - scratches_*.jpg
 - clean_labels.py
 
-[raw file tree]
+[Generated file tree]
 - NEU-DET
     - train
     - validation
@@ -45,7 +45,10 @@ from operator import itemgetter
             - scratches_*.xml
 
 [Usage]
-Modify `ROOT_FOLDER_PATH`, `DILATED_WIDTH`, `OVERLAP_FRACTION`
+Modify `ROOT_FOLDER_PATH` to your.
+Modify `DILATED_WIDTH` for merging near-by boxes.
+Modify `OVERLAP_FRACTION` for merging overlapped boxes.
+Modify `PASS_LABELS` for listing unaffected classes.
 $ python clean_labels.py
 
 """
@@ -58,6 +61,7 @@ LABELS = ['crazing', 'inclusion', 'patches', 'pitted_surface', 'rolled-in_scale'
 DILATED_WIDTH = 10
 # If overlapped area > OVERLAP_FRACTION * min_box_area, merge boxes
 OVERLAP_FRACTION = 0.4
+PASS_LABELS = ['patches', 'scratches']
 DICT_FOLDER = {
     'crazing': 'cz',
     'inclusion': 'in',
@@ -91,7 +95,7 @@ def read_xml(in_fp):
     dict_group = {}
     for obj in root.iter('object'):
         cls = obj.find('name').text
-        if cls in LABELS and not int(obj.find('difficult').text) == 1:
+        if cls in LABELS:
             xmlbox = obj.find('bndbox')
             bb = [int(xmlbox.find(x).text) for x in ('xmin', 'xmax', 'ymin', 'ymax')]
             if cls in dict_group:
@@ -349,18 +353,18 @@ def clean(xml_files, annot_folder, output_folder, image_set):
         w, h, dict_group = read_xml(in_fp)
         
         for class_name in dict_group:
-            if class_name in ['patches', 'scratches'] or len(dict_group[class_name]) < 2:
+            if class_name in PASS_LABELS or len(dict_group[class_name]) < 2:
                 # Ignore this group
                 continue
 
-            if class_name in ['crazing', 'pitted_surface', 'rolled-in_scale']:
+            if class_name in ['crazing', 'pitted_surface']:
                 dilated = True
             else:
                 dilated = False
 
             list_boxes = union_boxes(dict_group[class_name], dilated, w, h)
             dict_group[class_name] = list_boxes
-
+        
         # Convert dict to list
         list_bbox = []
         for class_name in dict_group:

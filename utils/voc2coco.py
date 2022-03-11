@@ -11,39 +11,42 @@ import json
 https://github.com/yukkyo/voc2coco/blob/master/voc2coco.py
 
 [file tree]
-- NEU-DET
-    - train
-    - validation
-        - annotations
-            - crazing_*.xml
-            - inclusion_*.xml
-            - patches_*.xml
-            - pittes_surface_*.xml
-            - rolled-in_scale_*.xml
-            - scratches_*.xml
+- ROOT_FOLDER_PATH 
+    - NEU-DET
+        - train
+        - validation
+            - annotations
+                - crazing_*.xml
+                - inclusion_*.xml
+                - patches_*.xml
+                - pittes_surface_*.xml
+                - rolled-in_scale_*.xml
+                - scratches_*.xml
+            - images
+                - crazing
+                    - crazing_*.jpg
+                - inclusion
+                    - inclusion_*.jpg
+                - patches
+                    - patches_*.jpg
+                - pittes_surface
+                    - pittes_surface_*.jpg
+                - rolled-in_scale
+                    - rolled-in_scale_*.jpg
+                - scratches
+                    - scratches_*.jpg
+    - NEU-DET_COCO
         - images
-            - crazing
-                - crazing_*.jpg
-            - inclusion
-                - inclusion_*.jpg
-            - patches
-                - patches_*.jpg
-            - pittes_surface
-                - pittes_surface_*.jpg
-            - rolled-in_scale
-                - rolled-in_scale_*.jpg
-            - scratches
-                - scratches_*.jpg
-- NEU-DET_COCO
-    - images
-        - *.jpg
-    - annotations
-        - train.json
-        - val.json
+            - *.jpg
+        - annotations
+            - train.json
+            - val.json
 - voc2coco.py
 
 [Usage]
-Modify `ROOT_FOLDER_PATH`, `VOC_FOLDER_PATH`
+Modify `ROOT_FOLDER_PATH` to yours.
+Modify `COPY_IMG` if you want to copy images to new image folder.
+Modify `LABELS` to your class names.
 $ python voc2coco.py
 
 """
@@ -51,7 +54,7 @@ $ python voc2coco.py
 ROOT_FOLDER_PATH = r'D:/Documents/Academic/workspace/python_prj/now/Steel_defect/dataset'
 VOC_FOLDER_PATH = os.path.join(ROOT_FOLDER_PATH, 'NEU-DET') 
 LABELS = ['crazing', 'inclusion', 'patches', 'pitted_surface', 'rolled-in_scale', 'scratches']
-COPY_IMG = True
+COPY_IMG = False
 
 
 def get_coco_annotation_from_obj(obj, label2id):
@@ -71,6 +74,8 @@ def get_coco_annotation_from_obj(obj, label2id):
     xmax = int(float(bndbox.findtext('xmax')))
     ymax = int(float(bndbox.findtext('ymax')))
     assert xmax > xmin and ymax > ymin, f"Box size error !: (xmin, ymin, xmax, ymax): {xmin, ymin, xmax, ymax}"
+    assert xmin >= 0 or ymin >= 0, f"Box size error !: (xmin, ymin): {xmin, ymin}"
+    
     o_width = xmax - xmin
     o_height = ymax - ymin
     ann = {
