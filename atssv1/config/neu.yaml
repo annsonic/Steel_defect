@@ -12,8 +12,8 @@ data:
   
   max_thresh: 320
   use_crowd: False
-  batch_size: 4 #128
-  num_workers: 1 #2
+  batch_size: 128
+  num_workers: 2
   debug: False
   remove_blank: Ture
 
@@ -21,27 +21,29 @@ model:
   num_cls: 6
   # https://github.com/martinzlocha/anchor-optimization/
   anchor_sizes: [32, 64, 128, 256, 512]
+  anchor_scales: [0.934, 1.188, 1.49]
+  anchor_ratios: [0.287, 1.0, 3.484]
   strides: [8, 16, 32, 64, 128]
   backbone: resnet18
   pretrained: True
   top_k: 9
-  alpha: 0.25
-  gamma: 2.0
+  alpha: 0.4
+  gamma: 0.9
   iou_type: giou
-  iou_loss_weight: 0.5
+  iou_loss_weight: 1.0
   reg_loss_weight: 1.15
   iou_loss_type: centerness
-  conf_thresh: 0.3
-  nms_iou_thresh: 0.2
+  conf_thresh: 0.05
+  nms_iou_thresh: 0.5
   max_det: 300
 
 optim:
   optimizer: Adam
   lr: 0.0001
-  milestones: [] # [48, 55]
+  milestones: [55]
   warm_up_epoch: 2
   weight_decay: 0.0001
-  epochs: 1 # 60
+  epochs: 60
   sync_bn: True
   amp: True
 val:
@@ -49,6 +51,6 @@ val:
   weight_path: weights
 
 resume:
-  ckpt_name: 'atss_retina_resnet18_best_map.pth'
+  ckpt_name: ''
 
-gpus: 'cpu' # 0 or 'cpu'
+gpus: 0 # 0 or 'cpu'
