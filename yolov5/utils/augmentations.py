@@ -18,6 +18,7 @@ class GridMask(object):
         self.mode = mode
         self.rotate = rotate
         self.r_ratio = r_ratio
+        self.colors = [(0, 0, 0), (127, 127, 127), (255, 255, 255)]
     
     def rotate_bound(self, image, angle):
         # CREDIT: https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
@@ -66,7 +67,8 @@ class GridMask(object):
         if self.mode == 1:
             mask = 1  -mask
         # Mask th input image
-        image[mask == 0] = (255, 255, 255)
+        color = random.choice(self.colors)
+        image[mask == 0] = color
         
         return image
     
@@ -88,13 +90,13 @@ class Albumentations:
             self.transform = A.Compose(
                 [
                     # A.Blur(blur_limit=3, p=0.5), 
-                    # A.MedianBlur(blur_limit=3, p=0.5),
+                    A.MedianBlur(blur_limit=3, p=0.5),
                     # A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8),p=0.5), 
                     A.RandomBrightnessContrast(brightness_by_max=True, p=0.5),
-                    A.RandomGamma(gamma_limit=(50, 250), p=0.5),
+                    A.RandomGamma(gamma_limit=(80, 120), p=0.5),
                     A.ImageCompression(quality_lower=75, p=0.5),
                     A.RandomRotate90(p=0.5),
-                    A.GaussNoise(var_limit=(1.0, 200.0), mean=0, per_channel=True, p=0.5),
+                    A.GaussNoise(var_limit=(1.0, 100.0), mean=0, per_channel=True, p=0.5),
                     A.MultiplicativeNoise(multiplier=(0.8, 1.2), elementwise=True, p=0.5),
                     A.ToGray(p=1),
                 ], 
@@ -109,22 +111,50 @@ class Albumentations:
                         sigma = 30,
                         alpha_affine = 1,
                         border_mode=4,
+                        interpolation=2, 
                         p=0.5
                     ),
                     A.GridDistortion(
                         num_steps=8, 
-                        distort_limit=0.5, 
+                        distort_limit=0.35, 
                         border_mode=4,
+                        interpolation=2, 
                         p=0.5),
                     A.OpticalDistortion(
-                        distort_limit=0.2, 
-                        shift_limit=0.3, 
+                        distort_limit=0.15, 
+                        shift_limit=0.2, 
                         border_mode=4,
+                        interpolation=2, 
                         p=0.5),
                 ], p=1
             )
 
-            self.grid_mask = GridMask(mode=1, rotate=45, r_ratio=0.5)
+            self.large_spatial_transform = A.OneOf(
+                [
+                    A.ElasticTransform(
+                        alpha = 60,
+                        sigma = 20,
+                        alpha_affine = 10,
+                        border_mode=4,
+                        interpolation=2, 
+                        p=0.5
+                    ),
+                    A.GridDistortion(
+                        num_steps=10, 
+                        distort_limit=0.5, 
+                        border_mode=4,
+                        interpolation=2, 
+                        p=0.5),
+                    A.OpticalDistortion(
+                        distort_limit=0.3, 
+                        shift_limit=0.4, 
+                        border_mode=4,
+                        interpolation=2, 
+                        p=0.5),
+                ], p=1
+            )
+
+            self.grid_mask = GridMask(mode=1, rotate=45, r_ratio=0.75)
 
             LOGGER.info(colorstr('albumentations pixel: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
             LOGGER.info(colorstr('albumentations spatial: ') + ', '.join(f'{x}' for x in self.spatial_transform.transforms if x.p))
@@ -158,8 +188,8 @@ class Albumentations:
         return img
 
     def __call__(self, im, labels, p=1.0):
-        if random.random() < 0.5:
-            im = self._autocontrast(im)
+        # if random.random() < 0.5:
+            # im = self._autocontrast(im)
 
         if self.transform and random.random() < p:
             new = self.transform(image=im, bboxes=labels[:, 1:], class_labels=labels[:, 0])  # transformed
@@ -169,8 +199,6 @@ class Albumentations:
         if self.spatial_transform and random.random() < p:
             h, w = im.shape[:2]
             for label in labels: # label: np.array shape (5,)
-                # if label[0] in [0, 3, 4]: # 'crazing', 'pitted_surface', 'rolled-in_scale'
-                #     continue
                 xc = int(label[1] * w)
                 yc = int(label[2] * h)
                 bw = int(label[3] * w)
@@ -183,7 +211,10 @@ class Albumentations:
 
                 # Crop RoI
                 src = im[ymin:ymax, xmin:xmax, :]
-                new = self.spatial_transform(image=src)
+                if bw > 100 and bh > 100:
+                    new = self.large_spatial_transform(image=src)
+                else:
+                    new = self.spatial_transform(image=src)
                 dst = new['image']
                 # Paste
                 im[ymin:ymax, xmin:xmax, :] = dst
